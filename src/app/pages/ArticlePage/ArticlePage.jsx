@@ -31,7 +31,7 @@ import Image from '#containers/Image';
 import Disclaimer from '#containers/Disclaimer';
 import Blocks from '#containers/Blocks';
 import timestamp from '#containers/ArticleTimestamp';
-import { GelPageGrid, GridItemLarge } from '#components/Grid';
+import Grid, { GelPageGrid, GridItemLarge } from '#components/Grid';
 import ATIAnalytics from '#containers/ATIAnalytics';
 import ChartbeatAnalytics from '#containers/ChartbeatAnalytics';
 import ComscoreAnalytics from '#containers/ComscoreAnalytics';
@@ -55,6 +55,8 @@ import {
 import filterForBlockType from '#lib/utilities/blockHandlers';
 import RelatedTopics from '#containers/RelatedTopics';
 import NielsenAnalytics from '#containers/NielsenAnalytics';
+import TopStories from '#containers/CpsTopStories';
+import FeaturesAnalysis from '#containers/CpsFeaturesAnalysis';
 
 const componentsToRender = {
   headline: headings,
@@ -101,13 +103,20 @@ const StyledRelatedTopics = styled(RelatedTopics)`
 `;
 
 const ArticlePage = ({ pageData, mostReadEndpointOverride }) => {
-  const { articleAuthor, showRelatedTopics } = useContext(ServiceContext);
+  const { articleAuthor, showRelatedTopics, serviceLang } = useContext(
+    ServiceContext,
+  );
   const headline = getHeadline(pageData);
   const description = getSummary(pageData) || getHeadline(pageData);
   const firstPublished = getFirstPublished(pageData);
   const lastPublished = getLastPublished(pageData);
   const aboutTags = getAboutTags(pageData);
   const topics = path(['metadata', 'topics'], pageData);
+  const topStoriesInitialData = path(
+    ['secondaryColumn', 'topStories'],
+    pageData,
+  );
+  const featuresInitialData = path(['secondaryColumn', 'features'], pageData);
 
   const promoImageBlocks = pathOr(
     [],
@@ -136,18 +145,88 @@ const ArticlePage = ({ pageData, mostReadEndpointOverride }) => {
     children: node.isRequired,
   };
 
+  const gridColumns = {
+    group0: 8,
+    group1: 8,
+    group2: 8,
+    group3: 8,
+    group4: 12,
+    group5: 12,
+  };
+
+  const gridMargins = {
+    group0: false,
+    group1: false,
+    group2: false,
+    group3: false,
+    group4: true,
+    group5: true,
+  };
+
+  const gridOffset = {
+    group0: 1,
+    group1: 1,
+    group2: 1,
+    group3: 1,
+    group4: 1,
+    group5: 1,
+  };
+
+  const gridColsMain = {
+    group0: 8,
+    group1: 8,
+    group2: 8,
+    group3: 8,
+    group4: 8,
+    group5: 8,
+  };
+
+  const gridColsSecondary = {
+    group0: 8,
+    group1: 8,
+    group2: 8,
+    group3: 8,
+    group4: 4,
+    group5: 4,
+  };
+
+  // Firefox specific styling to prevent content from overflowing on smaller resolutions
+  const GridPrimaryColumn = styled(Grid)`
+    @media (max-width: ${GEL_GROUP_3_SCREEN_WIDTH_MAX}) {
+      width: 100%;
+    }
+    @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
+      width: 100%;
+    }
+    padding-bottom: ${GEL_SPACING_QUAD};
+  `;
+
+  const GridSecondaryColumn = styled(Grid)`
+    @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
+      margin-top: ${GEL_SPACING_QUAD};
+    }
+  `;
+
+  const ComponentWrapper = styled.div`
+    margin-bottom: ${GEL_SPACING_TRPL};
+    padding: ${GEL_SPACING_DBL};
+  `;
+
+  /**
+   * this should be the defacto wrapper for OJs
+   * as it displays a conditional padding, which
+   * works well for mobile view.
+   */
+  const ResponsiveComponentWrapper = styled.div`
+    margin-bottom: ${GEL_SPACING_TRPL};
+    @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
+      margin-bottom: ${GEL_SPACING};
+      padding: ${GEL_SPACING_DBL};
+    }
+  `;
+
   const ArticlePageGrid = ({ children }) => (
-    <GelPageGrid
-      enableGelGutters
-      columns={{
-        group0: 6,
-        group1: 6,
-        group2: 6,
-        group3: 6,
-        group4: 8,
-        group5: 20,
-      }}
-    >
+    <GelPageGrid enableGelGutters columns={gridColumns} margins={gridMargins}>
       {children}
     </GelPageGrid>
   );
@@ -186,32 +265,64 @@ const ArticlePage = ({ pageData, mostReadEndpointOverride }) => {
         aboutTags={aboutTags}
         imageLocator={promoImage}
       />
-      <Main role="main">
-        <ArticlePageGrid>
-          <Disclaimer />
-          <Blocks
-            blocks={path(['content', 'model', 'blocks'], pageData)}
-            componentsToRender={componentsToRender}
-          />
-        </ArticlePageGrid>
-      </Main>
-
-      {showRelatedTopics && topics && (
-        <ArticlePageGrid>
-          <GridItemLarge>
-            <StyledRelatedTopics
-              topics={topics}
-              mobileDivider={false}
-              bar={false}
+      <ArticlePageGrid>
+        <GridPrimaryColumn
+          item
+          columns={gridColsMain}
+          startOffset={gridOffset}
+          parentColumns={gridColumns}
+        >
+          <Main role="main">
+            <Disclaimer />
+            <Blocks
+              blocks={path(['content', 'model', 'blocks'], pageData)}
+              componentsToRender={componentsToRender}
             />
-          </GridItemLarge>
-        </ArticlePageGrid>
-      )}
+          </Main>
 
-      <MostReadContainer
-        mostReadEndpointOverride={mostReadEndpointOverride}
-        wrapper={MostReadWrapper}
-      />
+          {showRelatedTopics && topics && (
+            <GridItemLarge>
+              <StyledRelatedTopics
+                topics={topics}
+                mobileDivider={false}
+                bar={false}
+              />
+            </GridItemLarge>
+          )}
+        </GridPrimaryColumn>
+        <GridSecondaryColumn
+          item
+          columns={gridColsSecondary}
+          parentColumns={gridColumns}
+          // `serviceLang` is defined when the language the page is written in is different to the
+          // language of the service. `serviceLang` is used to override the page language.
+          lang={serviceLang}
+        >
+          {topStoriesInitialData && (
+            <ResponsiveComponentWrapper>
+              <TopStories
+                content={topStoriesInitialData}
+                parentColumns={gridColsSecondary}
+              />
+            </ResponsiveComponentWrapper>
+          )}
+          {featuresInitialData && (
+            <ResponsiveComponentWrapper>
+              <FeaturesAnalysis
+                content={featuresInitialData}
+                parentColumns={gridColsSecondary}
+              />
+            </ResponsiveComponentWrapper>
+          )}
+          <ComponentWrapper>
+            <MostReadContainer
+              mostReadEndpointOverride={mostReadEndpointOverride}
+              columnLayout="oneColumn"
+              wrapper={MostReadWrapper}
+            />
+          </ComponentWrapper>
+        </GridSecondaryColumn>
+      </ArticlePageGrid>
     </>
   );
 };
