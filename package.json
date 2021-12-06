@@ -237,7 +237,7 @@
     "start-server-nestjs-webpack-plugin": "2.2.5",
     "stream-browserify": "3.0.0",
     "strip-ansi": "6.0.1",
-    "stylelint": "13.13.1",
+    "stylelint": "14.1.0",
     "stylelint-config-recommended": "5.0.0",
     "supertest": "6.1.6",
     "terser-webpack-plugin": "5.2.5",
