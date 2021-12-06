@@ -203,7 +203,7 @@
     "cypress-terminal-report": "3.4.0",
     "depcheck": "1.4.2",
     "eslint": "7.32.0",
-    "eslint-config-airbnb": "18.2.1",
+    "eslint-config-airbnb": "19.0.2",
     "eslint-config-prettier": "8.3.0",
     "eslint-import-resolver-alias": "1.1.2",
     "eslint-plugin-cypress": "2.12.1",
